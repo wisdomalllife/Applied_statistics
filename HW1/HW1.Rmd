@@ -1,0 +1,188 @@
+---
+title: "HW1"
+author: "Victoria"
+output: html_document
+date: "2024-03-21"
+output:
+  html_document:
+    keep_md: yes
+---
+
+## Libraries
+
+```{r}
+#install.packages('tidyverse')
+library(vegan)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(psych)
+library(tidyverse)
+data(BCI)
+data(BCI.env)
+```
+# EDA
+
+missing values
+```{r}
+sum(is.na(BCI))
+sum(is.na(BCI.env))
+```
+Summary statistics
+```{r}
+describe(t(BCI))
+```
+rare species
+```{r}
+sums <- colSums(BCI)
+n = 10
+column_names_less_than_n <- names(sums[sums < n])
+column_names_less_than_n
+```
+
+abundant trees
+```{r}
+names(sums[sums > 250])
+```
+species richness
+```{r}
+species_richness <- specnumber(BCI)
+species_richness
+#sppr_aov <- aov(species_richness ~ Habitat, data = BCI.env)
+#summary(sppr_aov)
+```
+trees distribution
+```{r}
+rowSums(BCI) %>%  hist(xlab = "trees counts", main = "trees distribution")
+```
+
+```{r}
+column_names_more_than_n <- names(sums[sums >= n & sums < 250])
+filtered <- BCI[, column_names_more_than_n]
+filtered$Other <- rowSums(BCI[, column_names_less_than_n])
+```
+
+Boxplots
+
+```{r}
+boxplot(BCI)
+boxplot(filtered)
+boxplot(BCI.env)
+```
+
+```{r}
+env <- BCI.env[, c("Habitat", "EnvHet", "Stream","UTM.EW","UTM.NS")]
+```
+
+# NMDS
+```{r}
+mds <- metaMDS(BCI, dist = "bray", k = 3)
+```
+
+
+```{r}
+stressplot(mds)
+```
+# ggplot
+
+```{r}
+sites <- data.frame(BCI.env, scores(mds, display = "sites"))
+head(sites, 2)
+```
+```{r}
+species <- data.frame(scores(mds, display = "species"))
+species$Species <- rownames(species)
+head(species, 2)
+```
+
+```{r}
+# ggplot
+gg_ord <- ggplot() +
+  geom_point(data = sites, 
+             aes(x = NMDS1, y = NMDS2, colour = Habitat, 
+                 shape = Stream), alpha = 0.5)
+
+gg_ord_sp <- gg_ord +
+  geom_text(data = species, 
+            aes(x = NMDS1, y = NMDS2, 
+                label = Species))
+gg_ord
+```
+```{r}
+ordiplot(mds, type = "text")
+ordiplot(mds, type = "points")
+```
+
+
+
+# Visualisation of the relationship
+
+## envfit
+
+```{r , echo=FALSE}
+#ef <- envfit(mds, env[, c("UTM.EW", "UTM.NS")])
+ef <- envfit(mds, env)
+ef$vectors
+ef$factors
+```
+```{r}
+plot(mds, display = "sites")
+plot(ef, p.max = 0.05)
+```
+we can see the influence of Habitats
+
+```{r}
+plot(mds, type="n")
+points(mds, display="sites", pch = c(1, 2, 3, 4, 5) [as.numeric(env$Habitat)],col = c("black", "red") [as.numeric(env$Stream)])
+legend(
+  "topright",
+  legend = c(levels(env$Habitat)),
+  pch = c(1, 2, 3 ,4 ,5),
+  title = "Habitat"
+)
+legend(
+  "topleft",
+  legend = c(levels(env$Stream)),
+  pch = 1,
+  title = "Stream",
+  col = c("black", "red")
+)
+
+legend(
+  "bottomleft",
+  paste0("stress = ",round(mds$stress, 3), cex = 1)
+)
+```
+
+
+## ordisurf
+
+```{r}
+par(mfrow = c(1, 2))
+os_UTM.EW <- ordisurf(mds, env$UTM.EW, method = "REML")
+os_EnvHet <- ordisurf(mds, env$EnvHet, method = "REML")
+#par(mfrow = c(1, 1))
+```
+```{r}
+os_Habitat <- ordisurf(mds, as.integer(factor(env$Habitat)), method = "REML", plot = FALSE)
+plot(os_Habitat)
+orditorp(mds,
+    display = "species"
+)
+
+plot(os_UTM.EW)
+orditorp(mds,
+    display = "species"
+)
+```
+
+```{r}
+summary(os_UTM.EW)
+
+summary(os_Habitat)
+```
+# Conclusion
+
+NMDS method was used.There might be a dependence on habitat and East-West coordinates.
+
+
