@@ -1,0 +1,89 @@
+---
+title: "HW2"
+author: "Victoria"
+date: "2024-05-14"
+output: html_document
+---
+
+## Libraries
+```{r}
+library(tidyr)
+library(dplyr)
+library(vegan)
+library(ggplot2)
+library(gridExtra)
+library(ape)
+library(pvclust)
+library(dendextend)
+library(tibble)
+```
+
+
+```{r}
+require(golubEsets)
+data("Golub_Merge")
+golub <- data.frame(Golub_Merge)[1:7129]
+rownames(golub) <- paste(Golub_Merge$ALL.AML, rownames(golub), sep = "_")
+```
+# distance metrics
+
+```{r}
+euclidean <- dist(golub, method = "euclidean")
+manhattan <- dist(golub, method = "manhattan")
+canberra <- dist(golub, method = "canberra")
+```
+
+# Visualize distributions
+```{r}
+plot_d <- function(data, title) {
+  ggplot(data, aes(x = data[,1])) +
+    geom_density() +
+    xlab(title) +
+    theme_minimal()
+}
+```
+
+```{r}
+
+Pl_euc <- plot_d(data.frame(Euclidean = as.numeric(euclidean)), "Euclidean Distance")
+Pl_man <- plot_d(data.frame(Manhattan = as.numeric(manhattan)), "Manhattan Distance")
+Pl_canb <- plot_d(data.frame(Canberra = as.numeric(canberra)), "Canberra Distance")
+
+grid.arrange(Pl_euc, Pl_man, Pl_canb)
+```
+
+# evaluate quality of clustering methods
+```{r}
+clustering <- function(dist, dist_name, results) {
+  methods <- c("single", "complete", "average", "ward.D2")
+  for (m in methods) {
+    hclust <- hclust(dist, method = m)
+    corr <- cor(dist, as.dist(cophenetic(hclust)))
+    cat("\nClustering Method:", m, "\n")
+    print(corr)
+  }
+}
+print("euclidean")
+clustering(euclidean)
+print("manhattan")
+clustering(manhattan)
+print("canberra")
+clustering(canberra)
+
+```
+# max Correlation for Euclidean distance with average clustering method
+
+# Bootstrap analysis
+```{r}
+
+plot(pvclust(t(golub), method.hclust = "average", nboot = 80, 
+             method.dist = "euclidean", parallel = TRUE, iseed = 42))
+```
+
+Our dataset contains gene expression data from patients with two types of leukemia: acute lymphoblastic leukemia (ALL) and acute myeloid leukemia (AML). After clustering, AML and ALL samples were divided, but some of them were grouped together. 
+Some genes may be differentially expressed in both ALL and AML, leading to shared gene expression patterns between the two types of leukemia. This can result in samples from different leukemia types clustering together. 
+Also noise, batch effects, or data preprocessing steps can introduce variability in gene expression data, potentially causing samples from different leukemia types to cluster together erroneously.
+
+
+
+
