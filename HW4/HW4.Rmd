@@ -35,8 +35,9 @@ boxplot(env)
 ```
 CCA
 ```{r}
+df <- read_excel('Grazing_Magierowski_et_al_2015.xls', sheet = 'env')
 env_cca <- as.data.frame(na.aggregate(env, FUN = mean))
-env_cca$GrazingRank <- dfs$env$GrazingRank
+env_cca$GrazingRank <- df$GrazingRank
 sum(is.na(env_cca))
 ```
 
