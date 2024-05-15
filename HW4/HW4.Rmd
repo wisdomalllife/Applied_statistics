@@ -1,0 +1,61 @@
+---
+title: "HW4"
+author: "Victoria"
+date: "2024-05-15"
+output: html_document
+---
+
+```{r}
+library(vegan)
+library(dplyr)
+library(readxl)
+library(zoo)
+```
+
+Data
+```{r}
+fauna <- read_excel('Grazing_Magierowski_et_al_2015.xls', sheet = 'fauna')
+env <- read_excel('Grazing_Magierowski_et_al_2015.xls', sheet = 'env')
+fauna <- fauna[, -1]
+env <- env[,-1]
+```
+```{r}
+sum(is.na(fauna))
+sum(is.na(env))
+```
+
+```{r}
+boxplot(env[,-ncol(env)])
+```
+
+
+```{r}
+env <- as.data.frame(scale(log(env[,-ncol(env)]+1), scale = FALSE))
+boxplot(env)
+```
+CCA
+```{r}
+env_cca <- as.data.frame(na.aggregate(env, FUN = mean))
+env_cca$GrazingRank <- dfs$env$GrazingRank
+sum(is.na(env_cca))
+```
+
+```{r}
+graze_cca <- cca(fauna ~ ., data = env_cca)
+summary(graze_cca)
+```
+```{r}
+vif.cca(graze_cca)
+```
+```{r}
+plot(graze_cca, scaling ="sites", main = "scaling 1")
+```
+```{r}
+plot(graze_cca, scaling ="species")
+```
+```{r}
+anova(graze_cca, by="term")
+anova(graze_cca, by = "mar")
+```
+From the analysis we see that Regulation, Conductivity, Temperature and Average Turbidity have the greatest influence on changes in the composition of flora and fauna.
+
