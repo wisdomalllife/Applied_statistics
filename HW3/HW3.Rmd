@@ -1,0 +1,95 @@
+---
+title: "HW3"
+author: "Victoria"
+date: "2024-05-14"
+output: html_document
+---
+
+## Libraries
+```{r}
+library(vegan)
+library(readxl)
+library(ggplot2)
+library(impute)
+library(factoextra)
+library(psych)
+library(ggforce)
+library(rstatix)
+```
+
+
+```{r}
+df <- read_excel("Sleepy lizard.xlsx")
+df <- df[, c(4:7,9, 13:18)]
+df$Treatment <- as.factor(df$Treatment)
+df$Habitat <- as.factor(df$Habitat)
+df$Connectivity <- as.factor(df$Connectivity)
+blood <- df[, c(5:11)]
+summary(blood)
+```
+
+
+```{r}
+boxplot(blood)
+```
+scaling
+```{r}
+blood <- scale(log(blood + 1), scale = FALSE)
+boxplot(blood)
+```
+Check the equality of variance in groups for perMANOVA.
+```{r}
+dist_blood <- vegdist(blood, method  = "euclidean")
+PCO_blood <- betadisper(dist_blood, df$Treatment)
+plot(PCO_blood)
+anova(PCO_blood)
+```
+```{r}
+dist_blood <- vegdist(blood, method  = "euclidean")
+PCO_blood <- betadisper(dist_blood, df$Habitat)
+plot(PCO_blood)
+anova(PCO_blood)
+```
+
+```{r}
+dist_blood <- vegdist(blood, method  = "euclidean")
+PCO_blood <- betadisper(dist_blood, df$Connectivity)
+plot(PCO_blood)
+anova(PCO_blood)
+```
+no significant difference of dispersion between groups
+
+Task 1
+
+a) 
+```{r}
+adonis2(blood ~ df$Treatment, method = "euclidean")
+```
+significant
+
+b)
+```{r}
+df_mod <- blood %>%
+    as.data.frame() %>%
+    filter(df$Treatment == 2)
+habitat_mod <- df[df$Treatment == 2, ]$Habitat
+adonis2(df_mod ~ habitat_mod, method = "euclidean")
+```
+not significant
+
+c) 
+```{r}
+connectivity_mod <- df[df$Treatment == 2, ]$Connectivity
+adonis2(df_mod ~ connectivity_mod, method = "euclidean")
+```
+not significant
+
+Task 2
+```{r}
+adonis2(df_mod ~ connectivity_mod + habitat_mod, method = "euclidean")
+```
+blood composition ~ Habitat * Connectivity not significant
+
+# Conclusion
+perMANOVA analysis shows the significant difference in blood composition of lizards from unmodified and heavily modified landscapes. 
+For degree of connectivity and habitat type there is no significant difference in blood for heavily modified landscapes.
